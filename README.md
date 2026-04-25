@@ -59,7 +59,7 @@ class MyApp : Application() {
 ### 3. 识别文字
 
 ```kotlin
-// 同步识别
+// 功能1：传入bitmap，返回识别的全部信息
 val result = AwPaddleOcr.detect(bitmap)
 println(result.mergedText)
 
@@ -69,7 +69,25 @@ lifecycleScope.launch {
     println(result.mergedText)
 }
 
-// 自定义参数
+// 功能2：传入bitmap和文字列表，返回每个文字的第一个匹配位置
+val firstMatches = AwPaddleOcr.findFirst(bitmap, listOf("姓名", "地址"))
+// firstMatches[0] -> "姓名"的第一个匹配（TextMatch?），未找到为null
+// firstMatches[1] -> "地址"的第一个匹配（TextMatch?），未找到为null
+
+// 功能3：传入bitmap和文字列表，返回每个文字的全部匹配位置
+val allMatches = AwPaddleOcr.findAll(bitmap, listOf("姓名", "地址"))
+// allMatches["姓名"] -> 所有包含"姓名"的文本块列表
+// allMatches["地址"] -> 所有包含"地址"的文本块列表
+
+// 功能4：传入bitmap和正则表达式，返回符合正则的全部匹配位置
+val regexMatches = AwPaddleOcr.findByRegex(bitmap, "\\d{11}")
+// 返回所有包含11位数字的文本块
+
+// 功能5：传入bitmap和两个文字s1、s2及高度差，返回同一行配对坐标
+val pairs = AwPaddleOcr.findPaired(bitmap, "姓名", "张三", maxHeightDiff = 10)
+// 返回"姓名"和"张三"中心点Y坐标差值<=10的所有配对
+
+// 自定义参数（所有方法均支持）
 val result = AwPaddleOcr.detect(bitmap) {
     padding(50)
     maxSideLen(1024)
@@ -88,10 +106,35 @@ val result = AwPaddleOcr.detect(bitmap) {
 | 方法 | 说明 |
 |------|------|
 | `init(context, numThread?, config?)` | 初始化 OCR 引擎（默认加载 PP-OCRv4 模型） |
-| `detect(bitmap, config?)` | 同步识别 |
-| `detectAsync(bitmap, config?)` | 协程异步识别 |
+| `detect(bitmap, config?)` | 功能1：传入bitmap，返回全部识别信息 |
+| `detectAsync(bitmap, config?)` | 功能1异步版 |
+| `findFirst(bitmap, texts, config?)` | 功能2：传入文字列表，返回每个文字的第一个匹配位置 |
+| `findFirstAsync(bitmap, texts, config?)` | 功能2异步版 |
+| `findAll(bitmap, texts, config?)` | 功能3：传入文字列表，返回每个文字的全部匹配位置 |
+| `findAllAsync(bitmap, texts, config?)` | 功能3异步版 |
+| `findByRegex(bitmap, regex, config?)` | 功能4：传入正则表达式，返回符合的全部匹配位置 |
+| `findByRegexAsync(bitmap, regex, config?)` | 功能4异步版 |
+| `findPaired(bitmap, s1, s2, maxHeightDiff?, config?)` | 功能5：传入两个文字和高度差，返回配对坐标 |
+| `findPairedAsync(bitmap, s1, s2, maxHeightDiff?, config?)` | 功能5异步版 |
 | `isInitialized` | 是否已初始化 |
 | `release()` | 释放引擎资源 |
+
+### TextMatch
+
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| `text` | String | 匹配到的文本内容 |
+| `boxPoint` | List\<Point\> | 文本框四个顶点坐标 |
+| `center` | Point | 文本框中心点坐标 |
+| `score` | Float | 置信度分数 |
+
+### TextPair
+
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| `s1Match` | TextMatch | s1 的匹配信息 |
+| `s2Match` | TextMatch | s2 的匹配信息 |
+| `heightDiff` | Int | 两个文本中心点的Y坐标差值（绝对值） |
 
 ### OcrConfig (DSL)
 

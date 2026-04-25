@@ -2,6 +2,7 @@ package com.answufeng.paddleocr
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Point
 import android.util.Log
 import com.benjaminwan.ocrlibrary.OcrEngine as NativeOcrEngine
 import com.benjaminwan.ocrlibrary.OcrResult as NativeOcrResult
@@ -64,10 +65,9 @@ object AwPaddleOcr {
         )
     }
 
-    @JvmOverloads
-    fun detect(
+    private fun doDetect(
         bitmap: Bitmap,
-        config: (OcrConfig.() -> Unit)? = null
+        config: (OcrConfig.() -> Unit)?
     ): OcrResult {
         val ocrConfig = OcrConfig().apply { config?.invoke(this) }
         val nativeEngine = requireEngine()
@@ -87,11 +87,123 @@ object AwPaddleOcr {
         return OcrResult.fromNative(nativeResult)
     }
 
+    @JvmOverloads
+    fun detect(
+        bitmap: Bitmap,
+        config: (OcrConfig.() -> Unit)? = null
+    ): OcrResult = doDetect(bitmap, config)
+
     suspend fun detectAsync(
         bitmap: Bitmap,
         config: (OcrConfig.() -> Unit)? = null
     ): OcrResult = withContext(Dispatchers.Default) {
         detect(bitmap, config)
+    }
+
+    @JvmOverloads
+    fun findFirst(
+        bitmap: Bitmap,
+        texts: List<String>,
+        config: (OcrConfig.() -> Unit)? = null
+    ): List<TextMatch?> {
+        val result = doDetect(bitmap, config)
+        return texts.map { target ->
+            result.textBlocks
+                .firstOrNull { it.text.contains(target) }
+                ?.toTextMatch()
+        }
+    }
+
+    suspend fun findFirstAsync(
+        bitmap: Bitmap,
+        texts: List<String>,
+        config: (OcrConfig.() -> Unit)? = null
+    ): List<TextMatch?> = withContext(Dispatchers.Default) {
+        findFirst(bitmap, texts, config)
+    }
+
+    @JvmOverloads
+    fun findAll(
+        bitmap: Bitmap,
+        texts: List<String>,
+        config: (OcrConfig.() -> Unit)? = null
+    ): Map<String, List<TextMatch>> {
+        val result = doDetect(bitmap, config)
+        return texts.associateWith { target ->
+            result.textBlocks
+                .filter { it.text.contains(target) }
+                .map { it.toTextMatch() }
+        }
+    }
+
+    suspend fun findAllAsync(
+        bitmap: Bitmap,
+        texts: List<String>,
+        config: (OcrConfig.() -> Unit)? = null
+    ): Map<String, List<TextMatch>> = withContext(Dispatchers.Default) {
+        findAll(bitmap, texts, config)
+    }
+
+    @JvmOverloads
+    fun findByRegex(
+        bitmap: Bitmap,
+        regex: String,
+        config: (OcrConfig.() -> Unit)? = null
+    ): List<TextMatch> {
+        val result = doDetect(bitmap, config)
+        val pattern = Regex(regex)
+        return result.textBlocks
+            .filter { pattern.containsMatchIn(it.text) }
+            .map { it.toTextMatch() }
+    }
+
+    suspend fun findByRegexAsync(
+        bitmap: Bitmap,
+        regex: String,
+        config: (OcrConfig.() -> Unit)? = null
+    ): List<TextMatch> = withContext(Dispatchers.Default) {
+        findByRegex(bitmap, regex, config)
+    }
+
+    @JvmOverloads
+    fun findPaired(
+        bitmap: Bitmap,
+        s1: String,
+        s2: String,
+        maxHeightDiff: Int = 10,
+        config: (OcrConfig.() -> Unit)? = null
+    ): List<TextPair> {
+        val result = doDetect(bitmap, config)
+        val s1Blocks = result.textBlocks.filter { it.text.contains(s1) }
+        val s2Blocks = result.textBlocks.filter { it.text.contains(s2) }
+        val pairs = mutableListOf<TextPair>()
+        for (s1Block in s1Blocks) {
+            val s1Center = s1Block.center()
+            for (s2Block in s2Blocks) {
+                val s2Center = s2Block.center()
+                val heightDiff = kotlin.math.abs(s1Center.y - s2Center.y)
+                if (heightDiff <= maxHeightDiff) {
+                    pairs.add(
+                        TextPair(
+                            s1Match = s1Block.toTextMatch(),
+                            s2Match = s2Block.toTextMatch(),
+                            heightDiff = heightDiff
+                        )
+                    )
+                }
+            }
+        }
+        return pairs
+    }
+
+    suspend fun findPairedAsync(
+        bitmap: Bitmap,
+        s1: String,
+        s2: String,
+        maxHeightDiff: Int = 10,
+        config: (OcrConfig.() -> Unit)? = null
+    ): List<TextPair> = withContext(Dispatchers.Default) {
+        findPaired(bitmap, s1, s2, maxHeightDiff, config)
     }
 
     fun release() = synchronized(this) {
@@ -139,4 +251,19 @@ object AwPaddleOcr {
             engine.mostAngle = mostAngle
         }
     }
+}
+
+private fun TextBlock.center(): Point {
+    val xs = boxPoint.map { it.x }
+    val ys = boxPoint.map { it.y }
+    return Point((xs.min() + xs.max()) / 2, (ys.min() + ys.max()) / 2)
+}
+
+private fun TextBlock.toTextMatch(): TextMatch {
+    return TextMatch(
+        text = text,
+        boxPoint = boxPoint,
+        center = center(),
+        score = score
+    )
 }
