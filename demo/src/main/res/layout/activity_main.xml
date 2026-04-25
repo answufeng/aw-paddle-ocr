@@ -117,23 +117,56 @@
 
                         </LinearLayout>
 
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnLocalOcr"
+                            style="@style/MaterialButton.AwPaddleOcr.Outlined"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="本地识别 (img01.png)" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        style="@style/Card.AwPaddleOcr">
+
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:layout_marginTop="8dp">
+                            android:orientation="vertical"
+                            android:padding="16dp">
 
-                            <com.google.android.material.button.MaterialButton
-                                android:id="@+id/btnLocalOcr"
-                                style="@style/MaterialButton.AwPaddleOcr.Outlined"
+                            <TextView
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="本地识别 (img01.png)" />
+                                android:text="识别结果"
+                                style="@style/Text.AwPaddleOcr.Subtitle" />
+
+                            <TextView
+                                android:id="@+id/tvLocalOcrResult"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:minHeight="60dp"
+                                android:background="@color/surface"
+                                android:padding="8dp"
+                                android:text="点击 '本地识别' 按钮查看结果"
+                                android:textSize="14sp"
+                                android:textColor="@color/on_surface" />
 
                         </LinearLayout>
 
-                    </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
                 </com.google.android.material.card.MaterialCardView>
 
             </LinearLayout>

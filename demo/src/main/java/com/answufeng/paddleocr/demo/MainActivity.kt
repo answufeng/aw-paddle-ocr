@@ -35,11 +35,11 @@ class MainActivity : AppCompatActivity() {
                     val result = AwPaddleOcr.detect(bitmap)
                     runOnUiThread {
                         val text = result.text.ifEmpty { "未识别到文字" }
-                        Toast.makeText(this@MainActivity, "识别结果:\n$text", Toast.LENGTH_LONG).show()
+                        findViewById<TextView>(R.id.tvLocalOcrResult).text = text
                     }
                 } catch (e: Exception) {
                     runOnUiThread {
-                        Toast.makeText(this@MainActivity, "识别失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                        findViewById<TextView>(R.id.tvLocalOcrResult).text = "识别失败: ${e.message}"
                     }
                 }
             }
