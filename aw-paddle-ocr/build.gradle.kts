@@ -43,7 +43,7 @@ ktlint {
 }
 
 dependencies {
-    api(libs.paddleocr)
+    api(files("libs/OcrLibrary-1.3.0-release.aar"))
     implementation(libs.core.ktx)
     implementation(libs.appcompat)
     implementation(libs.coroutines.core)
