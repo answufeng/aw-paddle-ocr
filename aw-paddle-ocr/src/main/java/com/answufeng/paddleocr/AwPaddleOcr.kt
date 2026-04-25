@@ -2,6 +2,7 @@ package com.answufeng.paddleocr
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
 import com.benjaminwan.ocrlibrary.OcrEngine as NativeOcrEngine
 import com.benjaminwan.ocrlibrary.OcrResult as NativeOcrResult
 import com.benjaminwan.ocrlibrary.TextBlock as NativeTextBlock
@@ -14,6 +15,13 @@ annotation class AwOcrDsl
 
 object AwPaddleOcr {
 
+    private const val TAG = "AwPaddleOcr"
+
+    private const val DET_MODEL = "ch_PP-OCRv4_det_infer.onnx"
+    private const val CLS_MODEL = "ch_ppocr_mobile_v2.0_cls_infer.onnx"
+    private const val REC_MODEL = "ch_PP-OCRv4_rec_infer.onnx"
+    private const val KEYS_FILE = "ppocr_keys_v1.txt"
+
     @Volatile
     private var engine: NativeOcrEngine? = null
 
@@ -22,9 +30,29 @@ object AwPaddleOcr {
 
     val isInitialized: Boolean get() = initialized
 
-    fun init(context: Context, config: (OcrConfig.() -> Unit)? = null): NativeOcrEngine = synchronized(this) {
+    @JvmOverloads
+    fun init(
+        context: Context,
+        numThread: Int = 4,
+        config: (OcrConfig.() -> Unit)? = null
+    ): NativeOcrEngine = synchronized(this) {
         val ocrConfig = OcrConfig().apply { config?.invoke(this) }
-        val nativeEngine = NativeOcrEngine(context.applicationContext)
+        val appContext = context.applicationContext
+        val nativeEngine = NativeOcrEngine(appContext)
+        val reinit = nativeEngine.init(
+            appContext.assets,
+            numThread,
+            DET_MODEL,
+            CLS_MODEL,
+            REC_MODEL,
+            KEYS_FILE
+        )
+        if (!reinit) {
+            Log.w(TAG, "Failed to reinitialize with PP-OCRv4 models, using default PP-OCRv3")
+        } else {
+            Log.i(TAG, "Successfully initialized with PP-OCRv4 models")
+        }
+        ocrConfig.applyTo(nativeEngine)
         engine = nativeEngine
         initialized = true
         nativeEngine
@@ -43,6 +71,7 @@ object AwPaddleOcr {
     ): OcrResult {
         val ocrConfig = OcrConfig().apply { config?.invoke(this) }
         val nativeEngine = requireEngine()
+        ocrConfig.applyTo(nativeEngine)
         val boxImg = bitmap.copy(Bitmap.Config.ARGB_8888, true) ?: bitmap
         val nativeResult = nativeEngine.detect(
             bitmap,
@@ -100,5 +129,14 @@ object AwPaddleOcr {
         fun unClipRatio(value: Float) { unClipRatio = value.coerceAtLeast(0.1f) }
         fun doAngle(enabled: Boolean) { doAngle = enabled }
         fun mostAngle(enabled: Boolean) { mostAngle = enabled }
+
+        internal fun applyTo(engine: NativeOcrEngine) {
+            engine.padding = padding
+            engine.boxScoreThresh = boxScoreThresh
+            engine.boxThresh = boxThresh
+            engine.unClipRatio = unClipRatio
+            engine.doAngle = doAngle
+            engine.mostAngle = mostAngle
+        }
     }
 }

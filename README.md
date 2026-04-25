@@ -1,14 +1,23 @@
 # aw-paddle-ocr
 
-基于 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 的 Android 端离线文字识别库，底层使用 [RapidOcrAndroidOnnx](https://github.com/RapidAI/RapidOcrAndroidOnnx) (ONNX Runtime) 推理引擎，支持 PP-OCRv4 模型。
+基于 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 的 Android 端离线文字识别库，底层使用 [RapidOcrAndroidOnnx](https://github.com/RapidAI/RapidOcrAndroidOnnx) (ONNX Runtime) 推理引擎，内置 **PP-OCRv4** 模型。
 
 ## 特性
 
 - 🚀 **离线识别** — 无需网络，本地推理，隐私安全
-- 🎯 **高精度** — 基于 PaddleOCR PP-OCRv4 模型
+- 🎯 **高精度** — 内置 PaddleOCR PP-OCRv4 检测+识别模型
 - ⚡ **高性能** — ONNX Runtime 推理，速度极快
 - 🧩 **易集成** — DSL 配置 + 协程支持，几行代码完成 OCR
-- 📦 **轻量级** — AAR 集成，无需额外下载模型
+- 📦 **开箱即用** — 模型内嵌 AAR，无需额外下载
+
+## 内置模型
+
+| 模型 | 文件名 | 大小 | 说明 |
+|------|--------|------|------|
+| 检测模型 | ch_PP-OCRv4_det_infer.onnx | ~4.5MB | PP-OCRv4 文本检测 |
+| 方向分类 | ch_ppocr_mobile_v2.0_cls_infer.onnx | ~572KB | 文本方向分类 |
+| 识别模型 | ch_PP-OCRv4_rec_infer.onnx | ~10MB | PP-OCRv4 文本识别 |
+| 字典文件 | ppocr_keys_v1.txt | ~26KB | 中文字符字典 |
 
 ## 快速开始
 
@@ -78,7 +87,7 @@ val result = AwPaddleOcr.detect(bitmap) {
 
 | 方法 | 说明 |
 |------|------|
-| `init(context, config?)` | 初始化 OCR 引擎 |
+| `init(context, numThread?, config?)` | 初始化 OCR 引擎（默认加载 PP-OCRv4 模型） |
 | `detect(bitmap, config?)` | 同步识别 |
 | `detectAsync(bitmap, config?)` | 协程异步识别 |
 | `isInitialized` | 是否已初始化 |
