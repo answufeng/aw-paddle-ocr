@@ -457,7 +457,7 @@ object AwPaddleOcr {
                 text = mergedText,
                 boxPoint = mergedBox,
                 center = Point((minX + maxX) / 2, (minY + maxY) / 2),
-                score = sortedLine.map { it.score }.average().toFloat(),
+                score = sortedLine.map { it.boxScore }.average().toFloat(),
                 blockCount = sortedLine.size
             )
         }
@@ -545,6 +545,6 @@ private fun TextBlock.toTextMatch(): TextMatch {
         text = text,
         boxPoint = boxPoint,
         center = center(),
-        score = score
+        score = boxScore
     )
 }
