@@ -9,6 +9,7 @@
 - ⚡ **高性能** — ONNX Runtime 推理，速度极快
 - 🧩 **易集成** — DSL 配置 + 协程支持，几行代码完成 OCR
 - 📦 **开箱即用** — 模型内嵌 AAR，无需额外下载
+- 🔍 **丰富API** — 10种识别模式，覆盖常见OCR场景
 
 ## 内置模型
 
@@ -56,38 +57,106 @@ class MyApp : Application() {
 }
 ```
 
-### 3. 识别文字
+### 3. 使用示例
+
+#### 功能1：全量识别
 
 ```kotlin
-// 功能1：传入bitmap，返回识别的全部信息
 val result = AwPaddleOcr.detect(bitmap)
 println(result.mergedText)
 
-// 协程异步识别
-lifecycleScope.launch {
-    val result = AwPaddleOcr.detectAsync(bitmap)
-    println(result.mergedText)
-}
+// 协程异步
+val result = AwPaddleOcr.detectAsync(bitmap)
+```
 
-// 功能2：传入bitmap和文字列表，返回每个文字的第一个匹配位置
+#### 功能2：首个匹配
+
+```kotlin
 val firstMatches = AwPaddleOcr.findFirst(bitmap, listOf("姓名", "地址"))
 // firstMatches[0] -> "姓名"的第一个匹配（TextMatch?），未找到为null
 // firstMatches[1] -> "地址"的第一个匹配（TextMatch?），未找到为null
+```
 
-// 功能3：传入bitmap和文字列表，返回每个文字的全部匹配位置
+#### 功能3：全部匹配
+
+```kotlin
 val allMatches = AwPaddleOcr.findAll(bitmap, listOf("姓名", "地址"))
 // allMatches["姓名"] -> 所有包含"姓名"的文本块列表
 // allMatches["地址"] -> 所有包含"地址"的文本块列表
+```
 
-// 功能4：传入bitmap和正则表达式，返回符合正则的全部匹配位置
+#### 功能4：正则匹配
+
+```kotlin
 val regexMatches = AwPaddleOcr.findByRegex(bitmap, "\\d{11}")
 // 返回所有包含11位数字的文本块
+```
 
-// 功能5：传入bitmap和两个文字s1、s2及高度差，返回同一行配对坐标
+#### 功能5：配对查找
+
+```kotlin
 val pairs = AwPaddleOcr.findPaired(bitmap, "姓名", "张三", maxHeightDiff = 10)
 // 返回"姓名"和"张三"中心点Y坐标差值<=10的所有配对
+```
 
-// 自定义参数（所有方法均支持）
+#### 功能6：键值对提取
+
+```kotlin
+// 自动提取 "标签: 值" 或 "标签：值" 格式的键值对
+// 也支持同一行中标签在左、值在右的情况
+val kvs = AwPaddleOcr.extractKeyValues(bitmap)
+kvs.forEach { kv ->
+    println("${kv.key} = ${kv.value}")
+}
+
+// 自定义分隔符
+val kvs = AwPaddleOcr.extractKeyValues(bitmap, separators = listOf(":", "：", "="))
+```
+
+#### 功能7：行级合并
+
+```kotlin
+// OCR经常把一行文字拆成多个block，mergeLines将同一行的block合并
+val lines = AwPaddleOcr.mergeLines(bitmap)
+lines.forEach { line ->
+    println("${line.text} (合并了${line.blockCount}个块)")
+}
+```
+
+#### 功能8：区域识别(ROI)
+
+```kotlin
+// 只识别图片中指定区域，提升性能
+val region = Rect(100, 200, 500, 400)
+val result = AwPaddleOcr.detectInRegion(bitmap, region)
+// 返回的坐标已自动映射回原图坐标系
+```
+
+#### 功能9：模糊匹配
+
+```kotlin
+// OCR可能识别有误，用模糊匹配容错查找
+val fuzzyMatches = AwPaddleOcr.findFuzzy(bitmap, listOf("姓名", "地址"), minSimilarity = 0.6f)
+fuzzyMatches["姓名"]?.forEach { match ->
+    println("找到: ${match.matched.text}, 相似度: ${match.similarity}")
+}
+```
+
+#### 功能10：纯检测不识别
+
+```kotlin
+// 只获取文字区域位置，不进行文字识别（节省识别耗时）
+val regions = AwPaddleOcr.detectRegions(bitmap)
+regions.forEach { region ->
+    println("区域: center=${region.center}, ${region.width}x${region.height}")
+}
+```
+
+#### 自定义参数
+
+所有方法均支持 OcrConfig DSL：
+
+```kotlin
 val result = AwPaddleOcr.detect(bitmap) {
     padding(50)
     maxSideLen(1024)
@@ -106,16 +175,26 @@ val result = AwPaddleOcr.detect(bitmap) {
 | 方法 | 说明 |
 |------|------|
 | `init(context, numThread?, config?)` | 初始化 OCR 引擎（默认加载 PP-OCRv4 模型） |
-| `detect(bitmap, config?)` | 功能1：传入bitmap，返回全部识别信息 |
+| `detect(bitmap, config?)` | 功能1：全量识别 |
 | `detectAsync(bitmap, config?)` | 功能1异步版 |
-| `findFirst(bitmap, texts, config?)` | 功能2：传入文字列表，返回每个文字的第一个匹配位置 |
+| `findFirst(bitmap, texts, config?)` | 功能2：每个文字的首个匹配位置 |
 | `findFirstAsync(bitmap, texts, config?)` | 功能2异步版 |
-| `findAll(bitmap, texts, config?)` | 功能3：传入文字列表，返回每个文字的全部匹配位置 |
+| `findAll(bitmap, texts, config?)` | 功能3：每个文字的全部匹配位置 |
 | `findAllAsync(bitmap, texts, config?)` | 功能3异步版 |
-| `findByRegex(bitmap, regex, config?)` | 功能4：传入正则表达式，返回符合的全部匹配位置 |
+| `findByRegex(bitmap, regex, config?)` | 功能4：正则匹配的全部位置 |
 | `findByRegexAsync(bitmap, regex, config?)` | 功能4异步版 |
-| `findPaired(bitmap, s1, s2, maxHeightDiff?, config?)` | 功能5：传入两个文字和高度差，返回配对坐标 |
+| `findPaired(bitmap, s1, s2, maxHeightDiff?, config?)` | 功能5：两个文字的配对坐标 |
 | `findPairedAsync(bitmap, s1, s2, maxHeightDiff?, config?)` | 功能5异步版 |
+| `extractKeyValues(bitmap, separators?, maxHeightDiff?, config?)` | 功能6：键值对提取 |
+| `extractKeyValuesAsync(...)` | 功能6异步版 |
+| `mergeLines(bitmap, maxHeightDiff?, config?)` | 功能7：行级合并 |
+| `mergeLinesAsync(bitmap, maxHeightDiff?, config?)` | 功能7异步版 |
+| `detectInRegion(bitmap, region, config?)` | 功能8：区域识别(ROI) |
+| `detectInRegionAsync(bitmap, region, config?)` | 功能8异步版 |
+| `findFuzzy(bitmap, texts, minSimilarity?, config?)` | 功能9：模糊匹配 |
+| `findFuzzyAsync(bitmap, texts, minSimilarity?, config?)` | 功能9异步版 |
+| `detectRegions(bitmap, config?)` | 功能10：纯检测不识别 |
+| `detectRegionsAsync(bitmap, config?)` | 功能10异步版 |
 | `isInitialized` | 是否已初始化 |
 | `release()` | 释放引擎资源 |
 
@@ -135,6 +214,42 @@ val result = AwPaddleOcr.detect(bitmap) {
 | `s1Match` | TextMatch | s1 的匹配信息 |
 | `s2Match` | TextMatch | s2 的匹配信息 |
 | `heightDiff` | Int | 两个文本中心点的Y坐标差值（绝对值） |
+
+### KeyValue
+
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| `key` | String | 键名 |
+| `value` | String | 值 |
+| `keyMatch` | TextMatch | 键的匹配位置信息 |
+| `valueMatch` | TextMatch | 值的匹配位置信息 |
+
+### MergedLine
+
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| `text` | String | 合并后的文本 |
+| `boxPoint` | List\<Point\> | 合并后的文本框坐标 |
+| `center` | Point | 文本框中心点 |
+| `score` | Float | 平均置信度 |
+| `blockCount` | Int | 合并的文本块数量 |
+
+### TextRegion
+
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| `boxPoint` | List\<Point\> | 文本区域四个顶点坐标 |
+| `center` | Point | 区域中心点 |
+| `width` | Int | 区域宽度 |
+| `height` | Int | 区域高度 |
+
+### FuzzyMatch
+
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| `target` | String | 查找的目标文字 |
+| `matched` | TextMatch | 匹配到的文本块信息 |
+| `similarity` | Float | 相似度（0~1，1为完全匹配） |
 
 ### OcrConfig (DSL)
 
