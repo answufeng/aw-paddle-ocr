@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background">#FF0F172A</color>
+    <color name="surface">#FF1E293B</color>
+    <color name="card_background">#FF1E293B</color>
+    <color name="card_border">#FF334155</color>
+    <color name="on_surface">#FFF8FAFC</color>
+    <color name="on_surface_variant">#FFCBD5E1</color>
+</resources>
