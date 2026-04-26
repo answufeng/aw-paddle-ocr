@@ -14,9 +14,9 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.appbar.MaterialToolbar
+import androidx.lifecycle.lifecycleScope
 import com.answufeng.paddleocr.AwPaddleOcr
 import com.answufeng.paddleocr.TextBlock
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class MarkOcrActivity : AppCompatActivity() {
@@ -43,7 +43,7 @@ class MarkOcrActivity : AppCompatActivity() {
         progressBar.visibility = View.VISIBLE
         tvMatchInfo.text = "正在识别..."
 
-        GlobalScope.launch {
+        lifecycleScope.launch {
             try {
                 val originalBitmap = BitmapFactory.decodeResource(resources, R.mipmap.img01)
                 val result = AwPaddleOcr.detect(originalBitmap)

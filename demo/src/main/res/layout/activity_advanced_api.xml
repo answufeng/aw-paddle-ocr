@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/background">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:theme="@style/Toolbar.AwPaddleOcr"
+            app:title="进阶 API 演示"
+            app:titleTextColor="@color/on_surface"
+            app:navigationIcon="?attr/homeAsUpIndicator" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="?attr/actionBarSize"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="对内置示例图（img01）一次 detect，再对 OcrResult 做多种查询，避免重复全图推理。"
+                style="@style/Text.AwPaddleOcr.Body" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRunOcrResultPipeline"
+                style="@style/MaterialButton.AwPaddleOcr.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="一次 detect + findFirst/merge/键值" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRunDetectTextOnly"
+                style="@style/MaterialButton.AwPaddleOcr.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="detectTextRegionsOnly（仅框，不识别）" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRunFuzzy"
+                style="@style/MaterialButton.AwPaddleOcr.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="detect + findFuzzy (ignoreCase)" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRunRoi"
+                style="@style/MaterialButton.AwPaddleOcr.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="ROI：中心 70% 区域 detectInRegion" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRunRegex"
+                style="@style/MaterialButton.AwPaddleOcr.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="detect + findByRegex(数字)" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRunFromFile"
+                style="@style/MaterialButton.AwPaddleOcr.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="写入缓存文件后 detectFromFile" />
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginTop="8dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="输出"
+                style="@style/Text.AwPaddleOcr.Subtitle" />
+
+            <TextView
+                android:id="@+id/tvLog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@color/surface"
+                android:fontFamily="monospace"
+                android:padding="12dp"
+                android:textSize="12sp"
+                android:textColor="@color/on_surface" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

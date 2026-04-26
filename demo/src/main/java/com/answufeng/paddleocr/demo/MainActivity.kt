@@ -7,8 +7,8 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
+import androidx.lifecycle.lifecycleScope
 import com.answufeng.paddleocr.AwPaddleOcr
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<MaterialButton>(R.id.btnLocalOcr).setOnClickListener {
-            GlobalScope.launch {
+            lifecycleScope.launch {
                 try {
                     val bitmap = BitmapFactory.decodeResource(resources, R.mipmap.img01)
                     android.util.Log.i("AwPaddleOcr", "Bitmap size: ${bitmap.width}x${bitmap.height}, config: ${bitmap.config}")
@@ -54,6 +54,10 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<MaterialButton>(R.id.btnMarkOcr).setOnClickListener {
             startActivity(Intent(this, MarkOcrActivity::class.java))
+        }
+
+        findViewById<MaterialButton>(R.id.btnAdvancedApi).setOnClickListener {
+            startActivity(Intent(this, AdvancedApiActivity::class.java))
         }
     }
 }

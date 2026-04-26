@@ -143,6 +143,14 @@
 
                         </LinearLayout>
 
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAdvancedApi"
+                            style="@style/MaterialButton.AwPaddleOcr.Outlined"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="进阶 API（OcrResult 链式 / 仅检测框）" />
+
                         <com.google.android.material.card.MaterialCardView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"

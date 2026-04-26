@@ -33,5 +33,9 @@
         <activity
             android:name=".MarkOcrActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".AdvancedApiActivity"
+            android:exported="false" />
     </application>
 </manifest>

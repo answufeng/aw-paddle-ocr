@@ -12,6 +12,6 @@ add_library(aw_ppocrv5 SHARED aw_ppocrv5_jni.cpp ppocrv5.cpp)
 
 target_compile_options(aw_ppocrv5 PRIVATE -fexceptions -frtti)
 
-target_link_libraries(aw_ppocrv5 ncnn ${OpenCV_LIBS} android jnigraphics log c++_shared)
+target_link_libraries(aw_ppocrv5 ncnn ${OpenCV_LIBS} android jnigraphics log)
 
-target_link_options(aw_ppocrv5 PRIVATE -fopenmp -static-openmp)
+target_link_options(aw_ppocrv5 PRIVATE -fopenmp -static-openmp -Wl,-z,max-page-size=16384)

@@ -1,42 +1,37 @@
 # aw-paddle-ocr
 
-基于 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 的 Android 端离线文字识别库，底层使用 [ncnn](https://github.com/Tencent/ncnn) 推理引擎，内置 **PP-OCRv5** 模型。
+基于 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 的 Android 离线文字识别库，底层 [ncnn](https://github.com/Tencent/ncnn)，内置 **PP-OCRv5** 检测与识别模型（随 AAR 打包）。
+
+**当前发布版本**：`1.0.0`（通过 [JitPack](https://jitpack.io/#answufeng/aw-paddle-ocr/1.0.0) 按 tag 拉取）。
+
+**建议阅读顺序**：完成「依赖」与「初始化」后，**优先**阅读「推荐用法：一次检测，多次后处理」；需要按场景查代码时再展开「使用示例」。
 
 ## 特性
 
-- 🚀 **离线识别** — 无需网络，本地推理，隐私安全
-- 🎯 **高精度** — 内置 PaddleOCR PP-OCRv5 检测+识别模型
-- ⚡ **高性能** — ncnn 推理，速度极快
-- 🧩 **易集成** — DSL 配置 + 协程支持，几行代码完成 OCR
-- 📦 **开箱即用** — 模型内嵌 AAR，无需额外下载
-- 🔍 **丰富API** — 10种识别模式，覆盖常见OCR场景
-- 🎨 **标注识别** — 支持在原图上圈出指定文字位置
-- 📱 **16KB 兼容** — 支持 Android 15+ 16KB 页面大小设备
+- **离线**：无需网络，端侧推理
+- **易集成**：Kotlin 协程、初始化时 `OcrConfig` 配置 `targetSize`
+- **能力完整**：全图识别、ROI、键值对、模糊/正则匹配、行合并、仅检测框等
+- **省推理**：同一张图推荐只调一次 `detect`，再对 `OcrResult` 做后处理；只要框、不要字用 **`detectTextRegionsOnly`**
+- **16KB 页面**：需 **AGP 8.5.1+**（本仓库为 8.6.x），由 AGP 处理 JNI 对齐，见下文「16KB 页面大小」
 
 ## 内置模型
 
-| 模型 | 文件名 | 大小 | 说明 |
-|------|--------|------|------|
-| 检测模型 | PP_OCRv5_mobile_det.ncnn.bin/param | ~4MB | PP-OCRv5 文本检测 |
-| 识别模型 | PP_OCRv5_mobile_rec.ncnn.bin/param | ~9MB | PP-OCRv5 文本识别 |
+`modelType = "mobile"` 时，将下列文件放在 **`assets/`** 根目录（与命名一致）：
 
-## 快速开始
+| 能力 | 文件名 |
+|------|--------|
+| 检测 | `PP_OCRv5_mobile_det.ncnn.param` / `PP_OCRv5_mobile_det.ncnn.bin` |
+| 识别 | `PP_OCRv5_mobile_rec.ncnn.param` / `PP_OCRv5_mobile_rec.ncnn.bin` |
 
-### 1. 添加依赖
+其他 `modelType` 时，将文件名中的 `mobile` 换为对应类型即可（与 [初始化](#初始化) 中 `modelType` 一致）。
 
-在项目 `settings.gradle.kts` 中添加 JitPack 仓库：
+## 依赖
+
+在 `settings.gradle.kts` 的仓库中增加 [JitPack](https://jitpack.io)（与 `google()`、`mavenCentral()` 并列即可）：
 
 ```kotlin
-dependencyResolutionManagement {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url = uri("https://jitpack.io") }
-    }
-}
+maven { url = uri("https://jitpack.io") }
 ```
-
-在模块 `build.gradle.kts` 中添加依赖：
 
 ```kotlin
 dependencies {
@@ -44,266 +39,186 @@ dependencies {
 }
 ```
 
-### 2. 初始化
+也可将 `1.0.0` 换为其它 [tag](https://github.com/answufeng/aw-paddle-ocr/tags) 或 commit hash；构建结果以 [JitPack 构建页](https://jitpack.io/#answufeng/aw-paddle-ocr) 为准。
 
-在 `Application.onCreate()` 中初始化：
+## 初始化
+
+在 `Application.onCreate()`（或首次使用 OCR 前）调用 **`AwPaddleOcr.init`**。`targetSize`、`OcrConfig` **仅在加载模型时**生效。
 
 ```kotlin
 class MyApp : Application() {
     override fun onCreate() {
         super.onCreate()
-        AwPaddleOcr.init(this)
+        AwPaddleOcr.init(
+            this,
+            modelType = "mobile",
+            targetSize = 640,
+            useGpu = false
+        ) {
+            // 可选：与入参 targetSize 二选一再覆盖
+            // targetSize(800)
+        }
     }
 }
 ```
 
-### 3. 使用示例
+| 参数 | 说明 |
+|------|------|
+| `modelType` | 与 `assets` 中 `PP_OCRv5_{modelType}_det/rec.*` 一致 |
+| `targetSize` | 检测输入边长相关尺度，范围见 `OcrConfig`（默认 640，可调 320～1280） |
+| `useGpu` | 是否走 ncnn Vulkan；设备不支持时回退 CPU |
 
-#### 功能1：全量识别
+## 推荐用法：一次检测，多次后处理
+
+对**同一张位图**若要做多类分析（关键词、键值、合并行、模糊匹配等），请只调用 **一次** `AwPaddleOcr.detect(bitmap)`，再对 `OcrResult` 使用扩展方法（**不会**再次进入 native 推理）：
 
 ```kotlin
 val result = AwPaddleOcr.detect(bitmap)
-println(result.text) // 按行拼接的识别结果
-
-// 协程异步
-val result = AwPaddleOcr.detectAsync(bitmap)
+val firsts = result.findFirst(listOf("姓名", "电话"), ignoreCase = true)
+val merged = result.mergeLines(maxHeightDiff = 10)
+val kvs = result.extractKeyValues()
+val fuzzy = result.findFuzzy(listOf("姓名"), minSimilarity = 0.65f, ignoreCase = true)
+val boxes = result.toTextRegions() // 带文字块的几何信息
 ```
 
-#### 功能2：首个匹配
+`AwPaddleOcr.findFirst(bitmap, …)` 等**以 bitmap 为入参的便捷方法**仍可用，但内部**每次都会整图 `detect` 一次**，已标 **@Deprecated**，适合快速迁移、不适合「一图多查」。
+
+## 使用示例
+
+下面对应「按场景直调 `AwPaddleOcr`」的写法；**生产环境**更推荐上一节的 **`detect` + 扩展**。
+
+### 功能1：全量识别
+
+```kotlin
+val result = AwPaddleOcr.detect(bitmap)
+println(result.text) // 多行以换行拼接
+```
+
+```kotlin
+val result = AwPaddleOcr.detectAsync(bitmap) // 协程
+```
+
+### 功能2：首个匹配
 
 ```kotlin
 val firstMatches = AwPaddleOcr.findFirst(bitmap, listOf("姓名", "地址"))
-// firstMatches[0] -> "姓名"的第一个匹配（TextMatch?），未找到为null
-// firstMatches[1] -> "地址"的第一个匹配（TextMatch?），未找到为null
+// firstMatches[0] / [1] 为对应关键字的 TextMatch?，未找到为 null
 ```
 
-#### 功能3：全部匹配
+### 功能3：全部匹配
 
 ```kotlin
 val allMatches = AwPaddleOcr.findAll(bitmap, listOf("姓名", "地址"))
-// allMatches["姓名"] -> 所有包含"姓名"的文本块列表
-// allMatches["地址"] -> 所有包含"地址"的文本块列表
+// allMatches["姓名"]、["地址"] 为各关键字命中的块列表
 ```
 
-#### 功能4：正则匹配
+### 功能4：正则匹配
 
 ```kotlin
 val regexMatches = AwPaddleOcr.findByRegex(bitmap, "\\d{11}")
-// 返回所有包含11位数字的文本块
 ```
 
-#### 功能5：配对查找
+### 功能5：配对查找
 
 ```kotlin
 val pairs = AwPaddleOcr.findPaired(bitmap, "姓名", "张三", maxHeightDiff = 10)
-// 返回"姓名"和"张三"中心点Y坐标差值<=10的所有配对
 ```
 
-#### 功能6：键值对提取
+### 功能6：键值对提取
 
 ```kotlin
-// 自动提取 "标签: 值" 或 "标签：值" 格式的键值对
-// 也支持同一行中标签在左、值在右的情况
 val kvs = AwPaddleOcr.extractKeyValues(bitmap)
-kvs.forEach { kv ->
-    println("${kv.key} = ${kv.value}")
-}
+kvs.forEach { kv -> println("${kv.key} = ${kv.value}") }
 
-// 自定义分隔符
-val kvs = AwPaddleOcr.extractKeyValues(bitmap, separators = listOf(":", "：", "="))
+val kvs2 = AwPaddleOcr.extractKeyValues(bitmap, separators = listOf(":", "：", "="))
 ```
 
-#### 功能7：行级合并
+### 功能7：行级合并
 
 ```kotlin
-// OCR经常把一行文字拆成多个block，mergeLines将同一行的block合并
 val lines = AwPaddleOcr.mergeLines(bitmap)
 lines.forEach { line ->
-    println("${line.text} (合并了${line.blockCount}个块)")
+    println("${line.text}（${line.blockCount} 个块）")
 }
 ```
 
-#### 功能8：区域识别(ROI)
+### 功能8：区域识别（ROI）
 
 ```kotlin
-// 只识别图片中指定区域，提升性能
-val region = Rect(100, 200, 500, 400)
-val result = AwPaddleOcr.detectInRegion(bitmap, region)
-// 返回的坐标已自动映射回原图坐标系
+import android.graphics.Rect
+
+val region = Rect(100, 200, 500, 400) // left, top, right, bottom
+val result = AwPaddleOcr.detectInRegion(bitmap, region) // 坐标已映射回原图
 ```
 
-#### 功能9：模糊匹配
+### 功能9：模糊匹配
 
 ```kotlin
-// OCR可能识别有误，用模糊匹配容错查找
 val fuzzyMatches = AwPaddleOcr.findFuzzy(bitmap, listOf("姓名", "地址"), minSimilarity = 0.6f)
 fuzzyMatches["姓名"]?.forEach { match ->
     println("找到: ${match.matched.text}, 相似度: ${match.similarity}")
 }
 ```
 
-#### 功能10：纯检测不识别
+### 功能10：纯检测、不识别
+
+只取文字框、不跑识别（省 CTC 等耗时）用 **`detectTextRegionsOnly`**：
 
 ```kotlin
-// 只获取文字区域位置，不进行文字识别（节省识别耗时）
-val regions = AwPaddleOcr.detectRegions(bitmap)
+val regions = AwPaddleOcr.detectTextRegionsOnly(bitmap)
 regions.forEach { region ->
     println("区域: center=${region.center}, ${region.width}x${region.height}")
 }
 ```
 
-#### 功能11：标注识别（Demo）
+`detectRegions(bitmap)` 仍保留，但已 **@Deprecated**：实现为**完整检测+识别**后取框，与「仅检测」语义不同。只要框、不要字请用 `detectTextRegionsOnly`；若已有全量结果，用 `detect(bitmap).toTextRegions()`。
+
+### 功能11：标注识别（Demo）
+
+Demo 中「标注识别」会加载 `img01` 并以红框标出「识别方式」等，实现见 `demo` 模块。
+
+### 从文件 / Assets
+
+`com.answufeng.paddleocr` 包下扩展（`OcrExtensions.kt`），**suspend**：
 
 ```kotlin
-// 在 Demo 应用中，点击"标注识别"按钮
-// 会自动识别 img01 图片并红色方框圈出"识别方式"文字
+val r = AwPaddleOcr.detectFromFile(path)
+val r2 = AwPaddleOcr.detectFromAssets(context, "test.jpg")
 ```
 
-#### 自定义参数
+`OcrResult.boxImg` 目前恒为 `null`；`saveBoxImageToFile` 已弃用，需自绘检测框后自行保存位图。
 
-所有方法均支持 OcrConfig DSL：
+## API 速览
 
-```kotlin
-val result = AwPaddleOcr.detect(bitmap) {
-    padding(50)
-    maxSideLen(1024)
-    boxScoreThresh(0.5f)
-    boxThresh(0.3f)
-    unClipRatio(1.6f)
-    doAngle(true)
-    mostAngle(true)
-}
-```
-
-## API
-
-### AwPaddleOcr
-
-| 方法 | 说明 |
+| 入口 | 作用 |
 |------|------|
-| `init(context, numThread?, config?)` | 初始化 OCR 引擎（默认加载 PP-OCRv5 模型） |
-| `detect(bitmap, config?)` | 功能1：全量识别 |
-| `detectAsync(bitmap, config?)` | 功能1异步版 |
-| `findFirst(bitmap, texts, config?)` | 功能2：每个文字的首个匹配位置 |
-| `findFirstAsync(bitmap, texts, config?)` | 功能2异步版 |
-| `findAll(bitmap, texts, config?)` | 功能3：每个文字的全部匹配位置 |
-| `findAllAsync(bitmap, texts, config?)` | 功能3异步版 |
-| `findByRegex(bitmap, regex, config?)` | 功能4：正则匹配的全部位置 |
-| `findByRegexAsync(bitmap, regex, config?)` | 功能4异步版 |
-| `findPaired(bitmap, s1, s2, maxHeightDiff?, config?)` | 功能5：两个文字的配对坐标 |
-| `findPairedAsync(bitmap, s1, s2, maxHeightDiff?, config?)` | 功能5异步版 |
-| `extractKeyValues(bitmap, separators?, maxHeightDiff?, config?)` | 功能6：键值对提取 |
-| `extractKeyValuesAsync(...)` | 功能6异步版 |
-| `mergeLines(bitmap, maxHeightDiff?, config?)` | 功能7：行级合并 |
-| `mergeLinesAsync(bitmap, maxHeightDiff?, config?)` | 功能7异步版 |
-| `detectInRegion(bitmap, region, config?)` | 功能8：区域识别(ROI) |
-| `detectInRegionAsync(bitmap, region, config?)` | 功能8异步版 |
-| `findFuzzy(bitmap, texts, minSimilarity?, config?)` | 功能9：模糊匹配 |
-| `findFuzzyAsync(bitmap, texts, minSimilarity?, config?)` | 功能9异步版 |
-| `detectRegions(bitmap, config?)` | 功能10：纯检测不识别 |
-| `detectRegionsAsync(bitmap, config?)` | 功能10异步版 |
-| `isInitialized` | 是否已初始化 |
-| `release()` | 释放引擎资源 |
+| `init` / `release` / `isInitialized` | 加载与释放（单例 native 引擎） |
+| `detect` / `detectAsync` | 全图检测+识别 |
+| `detectInRegion` / `detectInRegionAsync` | 指定矩形 ROI，坐标回映射原图 |
+| `detectTextRegionsOnly` / `detectTextRegionsOnlyAsync` | 仅检测框，无文字内容 |
+| `findFirst` / `findAll` / `findByRegex` / `findPaired` / `extractKeyValues` / `mergeLines` / `findFuzzy` 及 `*Async` | 以 **bitmap** 为入参时，内部会 `detect`；建议改用 `OcrResult` 扩展 |
+| `detectRegions` | **已弃用**；请用 `detectTextRegionsOnly` 或 `detect().toTextRegions()` |
+| `reset` | **已弃用**；请用 `release()` |
 
-### TextMatch
+`OcrResult` 上扩展（不二次推理）：`findFirst`、`findAll`、`findByRegex`、`findPaired`、`extractKeyValues`、`mergeLines`、`findFuzzy`、`toTextRegions`。
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `text` | String | 匹配到的文本内容 |
-| `boxPoint` | List\<Point\> | 文本框四个顶点坐标 |
-| `center` | Point | 文本框中心点坐标 |
-| `score` | Float | 置信度分数 |
+`OcrConfig`：仅 `targetSize`，在 **`init` 的 DSL** 中生效。各 `detect` / 便捷方法上的 `OcrConfig` 参数**保留签名为兼容，当前不参与推理**。
 
-### TextPair
+## 16KB 页面大小（Android 15+）
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `s1Match` | TextMatch | s1 的匹配信息 |
-| `s2Match` | TextMatch | s2 的匹配信息 |
-| `heightDiff` | Int | 两个文本中心点的Y坐标差值（绝对值） |
+- 使用 **AGP 8.5.1+**
+- 使用较新 NDK 及面向 16KB 的链接/打包方式（本库 CMake 已考虑相关项）
 
-### KeyValue
+详见官方文档 [支持 16KB 页面](https://developer.android.com/guide/practices/page-sizes)。
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `key` | String | 键名 |
-| `value` | String | 值 |
-| `keyMatch` | TextMatch | 键的匹配位置信息 |
-| `valueMatch` | TextMatch | 值的匹配位置信息 |
+## 混淆
 
-### MergedLine
+AAR 已带 `consumer-rules.pro`；若 JNI 仍被 R8 裁剪，可补充：
 
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `text` | String | 合并后的文本 |
-| `boxPoint` | List\<Point\> | 合并后的文本框坐标 |
-| `center` | Point | 文本框中心点 |
-| `score` | Float | 平均置信度 |
-| `blockCount` | Int | 合并的文本块数量 |
-
-### TextRegion
-
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `boxPoint` | List\<Point\> | 文本区域四个顶点坐标 |
-| `center` | Point | 区域中心点 |
-| `width` | Int | 区域宽度 |
-| `height` | Int | 区域高度 |
-
-### FuzzyMatch
-
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `target` | String | 查找的目标文字 |
-| `matched` | TextMatch | 匹配到的文本块信息 |
-| `similarity` | Float | 相似度（0~1，1为完全匹配） |
-
-### OcrConfig (DSL)
-
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `padding` | 50 | 图像外扩 padding |
-| `maxSideLen` | 1024 | 图像长边最大像素 |
-| `boxScoreThresh` | 0.5 | 文本框分数阈值 |
-| `boxThresh` | 0.3 | 文本框阈值 |
-| `unClipRatio` | 1.6 | 文本框扩张比例 |
-| `doAngle` | true | 是否启用方向分类 |
-| `mostAngle` | true | 方向分类取最多角度 |
-
-### OcrResult
-
-| 属性 | 类型 | 说明 |
-|------|------|------|
-| `text` | String | 全部识别文本（按行拼接，带换行） |
-| `textBlocks` | List\<TextBlock\> | 各文本块详情（已按Y/X坐标排序） |
-| `detectTime` | Double | 识别耗时（ms） |
-| `boxImg` | Bitmap? | 标注了文本框的图像 |
-
-### 扩展函数
-
-```kotlin
-// 从文件识别
-val result = AwPaddleOcr.detectFromFile("/sdcard/test.jpg")
-
-// 从 Assets 识别
-val result = AwPaddleOcr.detectFromAssets(context, "test.jpg")
-
-// 保存标注图像
-result.saveBoxImageToFile("/sdcard/result.jpg")
+```pro
+-keep class com.answufeng.paddleocr.PPOCRv5Engine { *; }
 ```
 
-## 16KB 设备兼容
+## 许可
 
-本库已配置支持 Android 15+ 16KB 页面大小设备：
-
-- `aaptOptions.noCompress("so")` — 确保 .so 文件不被压缩
-- `packaging.jniLibs.useLegacyPackaging = true` — 设置 `extractNativeLibs=true`
-- 构建后自动执行 `zipalign -P 16 4` 进行 16KB 对齐
-
-## 混淆规则
-
-库已内置 `consumer-rules.pro`，无需额外配置。
-
-## 许可证
-
-Apache License 2.0
+[Apache License 2.0](LICENSE)

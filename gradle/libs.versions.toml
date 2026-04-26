@@ -1,6 +1,6 @@
 [versions]
 # Android Gradle Plugin & Kotlin
-agp = "8.4.2"
+agp = "8.6.1"
 kotlin = "2.0.21"
 
 # 协程

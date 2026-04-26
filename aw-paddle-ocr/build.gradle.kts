@@ -18,7 +18,7 @@ android {
             cmake {
                 arguments += listOf(
                     "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
-                    "-DANDROID_STL=c++_shared"
+                    "-DANDROID_STL=c++_static"
                 )
             }
         }
@@ -54,12 +54,6 @@ android {
         }
     }
 
-    packaging {
-        jniLibs {
-            useLegacyPackaging = true
-        }
-    }
-
     lint {
         abortOnError = true
         warningsAsErrors = false
@@ -73,7 +67,6 @@ ktlint {
 
 dependencies {
     implementation(libs.core.ktx)
-    implementation(libs.appcompat)
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
 }

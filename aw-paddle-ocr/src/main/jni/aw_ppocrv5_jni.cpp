@@ -14,6 +14,7 @@
 #include "ppocrv5_dict.h"
 
 #define LOG_TAG "AwPPOCRv5"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
@@ -141,7 +142,80 @@ Java_com_answufeng_paddleocr_PPOCRv5Engine_nativeDetectAndRecognize(JNIEnv* env,
         }
     }
 
-    LOGI("OCR detected %d objects", (int)objects.size());
+    LOGD("OCR detected %d objects", (int)objects.size());
+
+    return env->NewStringUTF(result.c_str());
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_answufeng_paddleocr_PPOCRv5Engine_nativeDetectTextBlocksOnly(JNIEnv* env, jobject thiz, jobject bitmap)
+{
+    if (!g_ppocrv5)
+    {
+        LOGE("OCR engine not initialized");
+        return env->NewStringUTF("");
+    }
+
+    AndroidBitmapInfo info;
+    int ret = AndroidBitmap_getInfo(env, bitmap, &info);
+    if (ret != ANDROID_BITMAP_RESULT_SUCCESS)
+    {
+        LOGE("Failed to get bitmap info");
+        return env->NewStringUTF("");
+    }
+
+    void* pixels = 0;
+    ret = AndroidBitmap_lockPixels(env, bitmap, &pixels);
+    if (ret != ANDROID_BITMAP_RESULT_SUCCESS)
+    {
+        LOGE("Failed to lock bitmap pixels");
+        return env->NewStringUTF("");
+    }
+
+    cv::Mat rgb;
+    if (info.format == ANDROID_BITMAP_FORMAT_RGBA_8888)
+    {
+        cv::Mat rgba(info.height, info.width, CV_8UC4, pixels);
+        cv::cvtColor(rgba, rgb, cv::COLOR_RGBA2RGB);
+    }
+    else if (info.format == ANDROID_BITMAP_FORMAT_RGB_565)
+    {
+        cv::Mat rgb565(info.height, info.width, CV_8UC2, pixels);
+        cv::cvtColor(rgb565, rgb, cv::COLOR_BGR5652RGB);
+    }
+    else
+    {
+        AndroidBitmap_unlockPixels(env, bitmap);
+        LOGE("Unsupported bitmap format: %d", info.format);
+        return env->NewStringUTF("");
+    }
+
+    AndroidBitmap_unlockPixels(env, bitmap);
+
+    std::vector<Object> objects;
+    g_ppocrv5->detect(rgb, objects);
+
+    std::string result;
+    for (size_t i = 0; i < objects.size(); i++)
+    {
+        const Object& obj = objects[i];
+
+        if (i > 0) result += "\n";
+
+        cv::Point2f corners[4];
+        obj.rrect.points(corners);
+
+        char buf[256];
+        snprintf(buf, sizeof(buf), "%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f|%.3f|%d|",
+                 corners[0].x, corners[0].y,
+                 corners[1].x, corners[1].y,
+                 corners[2].x, corners[2].y,
+                 corners[3].x, corners[3].y,
+                 obj.prob, obj.orientation);
+        result += buf;
+    }
+
+    LOGD("detect-only: %d boxes", (int)objects.size());
 
     return env->NewStringUTF(result.c_str());
 }

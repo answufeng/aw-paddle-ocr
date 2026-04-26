@@ -19,7 +19,5 @@
     public static ** valueOf(java.lang.String);
 }
 
--keep class com.benjaminwan.ocrlibrary.** { *; }
-
 -dontwarn okio.**
 -dontwarn org.codehaus.mojo.**
