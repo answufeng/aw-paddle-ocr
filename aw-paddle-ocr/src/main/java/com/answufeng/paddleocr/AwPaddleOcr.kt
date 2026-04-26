@@ -5,9 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.Point
 import android.graphics.Rect
 import android.util.Log
-import com.benjaminwan.ocrlibrary.OcrEngine as NativeOcrEngine
-import com.benjaminwan.ocrlibrary.OcrResult as NativeOcrResult
-import com.benjaminwan.ocrlibrary.TextBlock as NativeTextBlock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.jvm.JvmOverloads
@@ -19,13 +16,8 @@ object AwPaddleOcr {
 
     private const val TAG = "AwPaddleOcr"
 
-    private const val DET_MODEL = "ch_PP-OCRv4_det_infer.onnx"
-    private const val CLS_MODEL = "ch_ppocr_mobile_v2.0_cls_infer.onnx"
-    private const val REC_MODEL = "ch_PP-OCRv4_rec_infer.onnx"
-    private const val KEYS_FILE = "ppocr_keys_v1.txt"
-
     @Volatile
-    private var engine: NativeOcrEngine? = null
+    private var engine: PPOCRv5Engine? = null
 
     @Volatile
     private var initialized = false
@@ -35,35 +27,49 @@ object AwPaddleOcr {
     @JvmOverloads
     fun init(
         context: Context,
-        numThread: Int = 4,
+        modelType: String = "mobile",
+        targetSize: Int = 640,
+        useGpu: Boolean = false,
         config: (OcrConfig.() -> Unit)? = null
-    ): NativeOcrEngine = synchronized(this) {
+    ): PPOCRv5Engine = synchronized(this) {
         val ocrConfig = OcrConfig().apply { config?.invoke(this) }
         val appContext = context.applicationContext
-        val nativeEngine = NativeOcrEngine(appContext)
-        val reinit = nativeEngine.init(
+        val nativeEngine = PPOCRv5Engine()
+        val success = nativeEngine.loadModel(
             appContext.assets,
-            numThread,
-            DET_MODEL,
-            CLS_MODEL,
-            REC_MODEL,
-            KEYS_FILE
+            modelType = modelType,
+            targetSize = ocrConfig.targetSize,
+            useGpu = useGpu
         )
-        if (!reinit) {
-            Log.w(TAG, "Failed to reinitialize with PP-OCRv4 models, using default PP-OCRv3")
-        } else {
-            Log.i(TAG, "Successfully initialized with PP-OCRv4 models")
+        if (!success) {
+            throw RuntimeException("Failed to load PPOCRv5 model")
         }
-        ocrConfig.applyTo(nativeEngine)
+        Log.i(TAG, "OCR engine initialized with PP-OCRv5 $modelType model, targetSize=${ocrConfig.targetSize}")
         engine = nativeEngine
         initialized = true
         nativeEngine
     }
 
-    private fun requireEngine(): NativeOcrEngine {
+    fun reset() = synchronized(this) {
+        engine?.release()
+        engine = null
+        initialized = false
+    }
+
+    private fun requireEngine(): PPOCRv5Engine {
         return engine ?: throw IllegalStateException(
             "AwPaddleOcr not initialized. Call AwPaddleOcr.init(context) first."
         )
+    }
+
+    private fun ensureArgb8888(bitmap: Bitmap): Bitmap {
+        if (bitmap.config == Bitmap.Config.ARGB_8888) {
+            return bitmap
+        }
+        val converted = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(converted)
+        canvas.drawBitmap(bitmap, 0f, 0f, null)
+        return converted
     }
 
     private fun doDetect(
@@ -72,20 +78,13 @@ object AwPaddleOcr {
     ): OcrResult {
         val ocrConfig = OcrConfig().apply { config?.invoke(this) }
         val nativeEngine = requireEngine()
-        ocrConfig.applyTo(nativeEngine)
-        val boxImg = bitmap.copy(Bitmap.Config.ARGB_8888, true) ?: bitmap
-        val nativeResult = nativeEngine.detect(
-            bitmap,
-            boxImg,
-            ocrConfig.padding,
-            ocrConfig.maxSideLen,
-            ocrConfig.boxScoreThresh,
-            ocrConfig.boxThresh,
-            ocrConfig.unClipRatio,
-            ocrConfig.doAngle,
-            ocrConfig.mostAngle
-        )
-        return OcrResult.fromNative(nativeResult)
+        val inputBitmap = ensureArgb8888(bitmap)
+        Log.i(TAG, "doDetect: input=${inputBitmap.width}x${inputBitmap.height}, config=${inputBitmap.config}")
+        val startTime = System.currentTimeMillis()
+        val blocks = nativeEngine.detectAndRecognize(inputBitmap)
+        val detectTime = System.currentTimeMillis() - startTime
+        Log.i(TAG, "doDetect: found ${blocks.size} text blocks in ${detectTime}ms")
+        return OcrResult.fromEngine(blocks, detectTime)
     }
 
     // ==================== 功能1：全量识别 ====================
@@ -414,6 +413,7 @@ object AwPaddleOcr {
     // ==================== 释放 ====================
 
     fun release() = synchronized(this) {
+        engine?.release()
         engine = null
         initialized = false
     }
@@ -494,43 +494,10 @@ object AwPaddleOcr {
 
     @AwOcrDsl
     class OcrConfig {
-        var padding: Int = 50
+        var targetSize: Int = 640
             private set
 
-        var maxSideLen: Int = 1024
-            private set
-
-        var boxScoreThresh: Float = 0.5f
-            private set
-
-        var boxThresh: Float = 0.3f
-            private set
-
-        var unClipRatio: Float = 1.6f
-            private set
-
-        var doAngle: Boolean = true
-            private set
-
-        var mostAngle: Boolean = true
-            private set
-
-        fun padding(value: Int) { padding = value.coerceAtLeast(0) }
-        fun maxSideLen(value: Int) { maxSideLen = value.coerceAtLeast(320) }
-        fun boxScoreThresh(value: Float) { boxScoreThresh = value.coerceIn(0f, 1f) }
-        fun boxThresh(value: Float) { boxThresh = value.coerceIn(0f, 1f) }
-        fun unClipRatio(value: Float) { unClipRatio = value.coerceAtLeast(0.1f) }
-        fun doAngle(enabled: Boolean) { doAngle = enabled }
-        fun mostAngle(enabled: Boolean) { mostAngle = enabled }
-
-        internal fun applyTo(engine: NativeOcrEngine) {
-            engine.padding = padding
-            engine.boxScoreThresh = boxScoreThresh
-            engine.boxThresh = boxThresh
-            engine.unClipRatio = unClipRatio
-            engine.doAngle = doAngle
-            engine.mostAngle = mostAngle
-        }
+        fun targetSize(value: Int) { targetSize = value.coerceIn(320, 1280) }
     }
 }
 

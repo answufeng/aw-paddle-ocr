@@ -126,10 +126,20 @@
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnLocalOcr"
                                 style="@style/MaterialButton.AwPaddleOcr.Outlined"
-                                android:layout_width="match_parent"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="本地识别 (img01.png)" />
+                                android:text="本地识别"
+                                android:layout_marginEnd="4dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnMarkOcr"
+                                style="@style/MaterialButton.AwPaddleOcr.Outlined"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="标注识别"
+                                android:layout_marginStart="4dp" />
 
                         </LinearLayout>
 

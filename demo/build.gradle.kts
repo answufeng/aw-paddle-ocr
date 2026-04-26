@@ -38,6 +38,60 @@ android {
             )
         }
     }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
+    aaptOptions {
+        noCompress("so")
+    }
+}
+
+fun androidSdkPath(): String {
+    return System.getenv("ANDROID_HOME")
+        ?: System.getenv("ANDROID_SDK_ROOT")
+        ?: "${System.getProperty("user.home")}/Library/Android/sdk"
+}
+
+fun findZipalign(): File? {
+    val dir = File(androidSdkPath(), "build-tools")
+    return dir.listFiles()
+        ?.filter { it.isDirectory }
+        ?.maxByOrNull { it.name }
+        ?.let { File(it, "zipalign") }
+        ?.takeIf { it.exists() }
+}
+
+fun alignApk(apkFile: File) {
+    val zipalign = findZipalign()
+    if (zipalign == null) {
+        logger.lifecycle("zipalign not found, skipping 16KB alignment")
+        return
+    }
+    val aligned = File(apkFile.parentFile, apkFile.name + ".aligned")
+    logger.lifecycle("Aligning ${apkFile.name} with 16KB page size...")
+    exec {
+        commandLine(zipalign.absolutePath, "-f", "-P", "16", "4", apkFile.absolutePath, aligned.absolutePath)
+    }
+    apkFile.delete()
+    aligned.renameTo(apkFile)
+    logger.lifecycle("16KB alignment done: ${apkFile.absolutePath}")
+}
+
+tasks.whenTaskAdded {
+    if (name == "packageDebug" || name == "packageRelease") {
+        val buildType = if (name == "packageDebug") "debug" else "release"
+        val apkName = if (buildType == "debug") "demo-debug.apk" else "demo-release-unsigned.apk"
+        doLast {
+            val apkFile = File(project.layout.buildDirectory.get().asFile, "outputs/apk/$buildType/$apkName")
+            if (apkFile.exists()) {
+                alignApk(apkFile)
+            }
+        }
+    }
 }
 
 dependencies {

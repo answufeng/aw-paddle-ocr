@@ -29,5 +29,9 @@
         <activity
             android:name=".CameraOcrActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".MarkOcrActivity"
+            android:exported="false" />
     </application>
 </manifest>

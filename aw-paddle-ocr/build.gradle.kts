@@ -7,9 +7,25 @@ plugins {
 android {
     namespace = "com.answufeng.paddleocr"
     compileSdk = 35
+
     defaultConfig {
         minSdk = 24
         consumerProguardFiles("consumer-rules.pro")
+
+        ndkVersion = "29.0.13113456"
+
+        externalNativeBuild {
+            cmake {
+                arguments += listOf(
+                    "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                    "-DANDROID_STL=c++_shared"
+                )
+            }
+        }
+
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
     }
 
     compileOptions {
@@ -21,6 +37,13 @@ android {
         jvmTarget = "17"
     }
 
+    externalNativeBuild {
+        cmake {
+            version = "3.22.1"
+            path = file("src/main/jni/CMakeLists.txt")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -28,6 +51,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
         }
     }
 
@@ -43,7 +72,6 @@ ktlint {
 }
 
 dependencies {
-    api(files("libs/OcrLibrary-1.3.0-release.aar"))
     implementation(libs.core.ktx)
     implementation(libs.appcompat)
     implementation(libs.coroutines.core)

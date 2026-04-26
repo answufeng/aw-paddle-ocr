@@ -2,8 +2,6 @@ package com.answufeng.paddleocr
 
 import android.graphics.Bitmap
 import android.graphics.Point
-import com.benjaminwan.ocrlibrary.OcrResult as NativeOcrResult
-import com.benjaminwan.ocrlibrary.TextBlock as NativeTextBlock
 
 data class OcrResult(
     val text: String,
@@ -12,12 +10,18 @@ data class OcrResult(
     val boxImg: Bitmap?
 ) {
     companion object {
-        internal fun fromNative(native: NativeOcrResult): OcrResult {
+        internal fun fromEngine(blocks: List<OcrTextBlock>, detectTimeMs: Long = 0): OcrResult {
+            val textBlocks = blocks.map { TextBlock.fromEngine(it) }
+            val sortedBlocks = textBlocks.sortedWith(
+                compareBy<TextBlock> { it.boxPoint.map { p -> p.y }.min() }
+                    .thenBy { it.boxPoint.map { p -> p.x }.min() }
+            )
+            val fullText = sortedBlocks.joinToString("\n") { it.text }
             return OcrResult(
-                text = native.strRes,
-                textBlocks = native.textBlocks.map { TextBlock.fromNative(it) },
-                detectTime = native.detectTime,
-                boxImg = native.boxImg
+                text = fullText,
+                textBlocks = sortedBlocks,
+                detectTime = detectTimeMs.toDouble(),
+                boxImg = null
             )
         }
     }
@@ -35,17 +39,17 @@ data class TextBlock(
     val blockTime: Double
 ) {
     companion object {
-        internal fun fromNative(native: NativeTextBlock): TextBlock {
+        internal fun fromEngine(block: OcrTextBlock): TextBlock {
             return TextBlock(
-                text = native.text,
-                boxPoint = native.boxPoint.map { Point(it.x, it.y) },
-                boxScore = native.boxScore,
-                angleIndex = native.angleIndex,
-                angleScore = native.angleScore,
-                angleTime = native.angleTime,
-                charScores = native.charScores,
-                crnnTime = native.crnnTime,
-                blockTime = native.blockTime
+                text = block.text,
+                boxPoint = block.boxPoint,
+                boxScore = block.boxScore,
+                angleIndex = block.orientation,
+                angleScore = 0f,
+                angleTime = 0.0,
+                charScores = FloatArray(0),
+                crnnTime = 0.0,
+                blockTime = 0.0
             )
         }
     }
