@@ -1,24 +1,24 @@
 # aw-paddle-ocr
 
-基于 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 的 Android 端离线文字识别库，底层使用 [RapidOcrAndroidOnnx](https://github.com/RapidAI/RapidOcrAndroidOnnx) (ONNX Runtime) 推理引擎，内置 **PP-OCRv4** 模型。
+基于 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 的 Android 端离线文字识别库，底层使用 [ncnn](https://github.com/Tencent/ncnn) 推理引擎，内置 **PP-OCRv5** 模型。
 
 ## 特性
 
 - 🚀 **离线识别** — 无需网络，本地推理，隐私安全
-- 🎯 **高精度** — 内置 PaddleOCR PP-OCRv4 检测+识别模型
-- ⚡ **高性能** — ONNX Runtime 推理，速度极快
+- 🎯 **高精度** — 内置 PaddleOCR PP-OCRv5 检测+识别模型
+- ⚡ **高性能** — ncnn 推理，速度极快
 - 🧩 **易集成** — DSL 配置 + 协程支持，几行代码完成 OCR
 - 📦 **开箱即用** — 模型内嵌 AAR，无需额外下载
 - 🔍 **丰富API** — 10种识别模式，覆盖常见OCR场景
+- 🎨 **标注识别** — 支持在原图上圈出指定文字位置
+- 📱 **16KB 兼容** — 支持 Android 15+ 16KB 页面大小设备
 
 ## 内置模型
 
 | 模型 | 文件名 | 大小 | 说明 |
 |------|--------|------|------|
-| 检测模型 | ch_PP-OCRv4_det_infer.onnx | ~4.5MB | PP-OCRv4 文本检测 |
-| 方向分类 | ch_ppocr_mobile_v2.0_cls_infer.onnx | ~572KB | 文本方向分类 |
-| 识别模型 | ch_PP-OCRv4_rec_infer.onnx | ~10MB | PP-OCRv4 文本识别 |
-| 字典文件 | ppocr_keys_v1.txt | ~26KB | 中文字符字典 |
+| 检测模型 | PP_OCRv5_mobile_det.ncnn.bin/param | ~4MB | PP-OCRv5 文本检测 |
+| 识别模型 | PP_OCRv5_mobile_rec.ncnn.bin/param | ~9MB | PP-OCRv5 文本识别 |
 
 ## 快速开始
 
@@ -63,7 +63,7 @@ class MyApp : Application() {
 
 ```kotlin
 val result = AwPaddleOcr.detect(bitmap)
-println(result.mergedText)
+println(result.text) // 按行拼接的识别结果
 
 // 协程异步
 val result = AwPaddleOcr.detectAsync(bitmap)
@@ -152,6 +152,13 @@ regions.forEach { region ->
 }
 ```
 
+#### 功能11：标注识别（Demo）
+
+```kotlin
+// 在 Demo 应用中，点击"标注识别"按钮
+// 会自动识别 img01 图片并红色方框圈出"识别方式"文字
+```
+
 #### 自定义参数
 
 所有方法均支持 OcrConfig DSL：
@@ -174,7 +181,7 @@ val result = AwPaddleOcr.detect(bitmap) {
 
 | 方法 | 说明 |
 |------|------|
-| `init(context, numThread?, config?)` | 初始化 OCR 引擎（默认加载 PP-OCRv4 模型） |
+| `init(context, numThread?, config?)` | 初始化 OCR 引擎（默认加载 PP-OCRv5 模型） |
 | `detect(bitmap, config?)` | 功能1：全量识别 |
 | `detectAsync(bitmap, config?)` | 功能1异步版 |
 | `findFirst(bitmap, texts, config?)` | 功能2：每个文字的首个匹配位置 |
@@ -267,12 +274,10 @@ val result = AwPaddleOcr.detect(bitmap) {
 
 | 属性 | 类型 | 说明 |
 |------|------|------|
-| `text` | String | 全部识别文本（空格分隔） |
-| `textBlocks` | List\<TextBlock\> | 各文本块详情 |
+| `text` | String | 全部识别文本（按行拼接，带换行） |
+| `textBlocks` | List\<TextBlock\> | 各文本块详情（已按Y/X坐标排序） |
 | `detectTime` | Double | 识别耗时（ms） |
 | `boxImg` | Bitmap? | 标注了文本框的图像 |
-| `mergedText` | String | 按行拼接的识别文本（扩展属性） |
-| `lines` | List\<String\> | 各行文本列表（扩展属性） |
 
 ### 扩展函数
 
@@ -286,6 +291,14 @@ val result = AwPaddleOcr.detectFromAssets(context, "test.jpg")
 // 保存标注图像
 result.saveBoxImageToFile("/sdcard/result.jpg")
 ```
+
+## 16KB 设备兼容
+
+本库已配置支持 Android 15+ 16KB 页面大小设备：
+
+- `aaptOptions.noCompress("so")` — 确保 .so 文件不被压缩
+- `packaging.jniLibs.useLegacyPackaging = true` — 设置 `extractNativeLibs=true`
+- 构建后自动执行 `zipalign -P 16 4` 进行 16KB 对齐
 
 ## 混淆规则
 
