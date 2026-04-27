@@ -27,7 +27,7 @@ if(TARGET opencv_core)
     endif()
 endif()
 
-add_library(aw_ppocrv5 SHARED aw_ppocrv5_jni.cpp ppocrv5.cpp)
+add_library(aw_ppocrv5 SHARED aw_ppocrv5_jni.cpp ppocrv5.cpp openmp_compat.cpp)
 
 target_compile_options(aw_ppocrv5 PRIVATE -fexceptions -frtti)
 
