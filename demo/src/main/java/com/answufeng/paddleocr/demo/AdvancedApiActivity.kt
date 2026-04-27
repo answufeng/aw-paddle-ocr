@@ -72,8 +72,18 @@ class AdvancedApiActivity : AppCompatActivity() {
                 sb.appendLine("detect: ${result.detectTime.toInt()} ms (native) / 总 ${elapsed} ms")
                 sb.appendLine("块数: ${result.textBlocks.size}")
                 sb.appendLine("findFirst(识别,方式): ${first.map { it?.text }}")
-                sb.appendLine("mergeLines: ${merged.size} 行, 首行: ${merged.firstOrNull()?.text?.take(40)}")
-                sb.appendLine("键值: ${kvs.size} 条, ${kvs.take(3).joinToString { "${it.key}=${it.value}" }}")
+                sb.appendLine(
+                    "mergeLines: ${merged.size} 行, 首行: ${
+                        merged.firstOrNull()?.text?.take(
+                            40
+                        )
+                    }"
+                )
+                sb.appendLine(
+                    "键值: ${kvs.size} 条, ${
+                        kvs.take(3).joinToString { "${it.key}=${it.value}" }
+                    }"
+                )
                 sb.appendLine("--- mergedText(前 200 字) ---\n${result.mergedText.take(200)}")
                 tvLog.text = sb.toString()
             } catch (e: Exception) {
@@ -93,7 +103,8 @@ class AdvancedApiActivity : AppCompatActivity() {
             try {
                 bitmap = loadSampleBitmap()
                 val t0 = System.currentTimeMillis()
-                val regions = withContext(Dispatchers.Default) { AwPaddleOcr.detectTextRegionsOnly(bitmap!!) }
+                val regions =
+                    withContext(Dispatchers.Default) { AwPaddleOcr.detectTextRegionsOnly(bitmap!!) }
                 val elapsed = System.currentTimeMillis() - t0
                 tvLog.text = buildString {
                     appendLine("detectTextRegionsOnly: ${elapsed} ms")

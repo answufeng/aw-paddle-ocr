@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 class MarkOcrActivity : AppCompatActivity() {
 
     companion object {
-        private const val TARGET_TEXT = "识别方式"
+        private const val TARGET_TEXT = "签到"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

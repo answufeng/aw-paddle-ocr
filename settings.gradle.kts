@@ -1,8 +1,12 @@
 pluginManagement {
     repositories {
-        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
-        maven { url = uri("https://maven.aliyun.com/repository/google") }
-        maven { url = uri("https://maven.aliyun.com/repository/central") }
+        // JitPack（CI）環境下避免使用第三方鏡像，降低 502/封鎖風險
+        val isJitPack = (System.getenv("JITPACK") ?: "").equals("true", ignoreCase = true)
+        if (!isJitPack) {
+            maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
+            maven { url = uri("https://maven.aliyun.com/repository/google") }
+            maven { url = uri("https://maven.aliyun.com/repository/central") }
+        }
         google()
         mavenCentral()
         gradlePluginPortal()
@@ -12,8 +16,11 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        maven { url = uri("https://maven.aliyun.com/repository/google") }
-        maven { url = uri("https://maven.aliyun.com/repository/central") }
+        val isJitPack = (System.getenv("JITPACK") ?: "").equals("true", ignoreCase = true)
+        if (!isJitPack) {
+            maven { url = uri("https://maven.aliyun.com/repository/google") }
+            maven { url = uri("https://maven.aliyun.com/repository/central") }
+        }
         google()
         mavenCentral()
         maven { url = uri("https://jitpack.io") }
