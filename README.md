@@ -208,19 +208,13 @@ val r2 = AwPaddleOcr.detectFromAssets(context, "test.jpg")
 
 - 使用 **AGP 8.5.1+**
 - 使用较新 NDK 及面向 16KB 的链接/打包方式（本库 CMake 已考虑相关项）
-- **ABI 说明**：为避免 `x86_64/libomp.so` 在部分环境出现 **LOAD segment 非 16KB 对齐**导致告警/拒审，库默认仅打包 `armeabi-v7a` / `arm64-v8a`；如需模拟器再自行启用 `x86` / `x86_64`。
+- 建议使用 **NDK r28+**（本仓库固定为 r28c），以获得默认的 16KB 对齐支持。
 
 详见官方文档 [支持 16KB 页面](https://developer.android.com/guide/practices/page-sizes)。
 
 ## 模拟器（x86_64）运行
 
-从 `1.0.7` 起，为了规避 `x86_64/libomp.so` 在部分环境的 **16KB 对齐**问题，库默认不打包 `x86/x86_64`，因此在 **x86_64 模拟器**上会出现找不到 `libaw_ppocrv5.so` 的错误。
-
-如需在模拟器上运行，请在构建时临时开启 x86：
-
-```bash
-./gradlew :demo:installDebug -Paw.ocr.enableX86=true
-```
+本库已随 AAR 一并发布 `x86/x86_64` 的 JNI so，x86_64 模拟器可直接运行。
 
 ## 混淆
 
