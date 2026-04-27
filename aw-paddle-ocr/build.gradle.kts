@@ -22,7 +22,10 @@ android {
         }
 
         ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            // Google Play 針對 Android 15+ 的 16KB page size 檢查會掃描 APK 內所有 .so。
+            // NDK 附帶的 x86_64 `libomp.so` 可能出現 LOAD segment 非 16KB 對齊，導致報警/拒審風險。
+            // 本庫面向真機主要 ABI 為 arm，預設僅打包 arm32/arm64；需要模擬器再自行開啟 x86/x86_64。
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
         }
     }
 
