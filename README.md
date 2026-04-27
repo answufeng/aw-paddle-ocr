@@ -2,7 +2,7 @@
 
 基于 [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 的 Android 离线文字识别库，底层 [ncnn](https://github.com/Tencent/ncnn)，内置 **PP-OCRv5** 检测与识别模型（随 AAR 打包）。
 
-**当前发布版本**：`1.0.7`（通过 [JitPack](https://jitpack.io/#answufeng/aw-paddle-ocr/1.0.7) 按 tag 拉取）。
+**当前发布版本**：`1.0.8`（通过 [JitPack](https://jitpack.io/#answufeng/aw-paddle-ocr/1.0.8) 按 tag 拉取）。
 
 **建议阅读顺序**：完成「依赖」与「初始化」后，**优先**阅读「推荐用法：一次检测，多次后处理」；需要按场景查代码时再展开「使用示例」。
 
@@ -35,11 +35,11 @@ maven { url = uri("https://jitpack.io") }
 
 ```kotlin
 dependencies {
-    implementation("com.github.answufeng:aw-paddle-ocr:1.0.7")
+    implementation("com.github.answufeng:aw-paddle-ocr:1.0.8")
 }
 ```
 
-也可将 `1.0.7` 换为其它 [tag](https://github.com/answufeng/aw-paddle-ocr/tags) 或 commit hash；构建结果以 [JitPack 构建页](https://jitpack.io/#answufeng/aw-paddle-ocr) 为准。
+也可将 `1.0.8` 换为其它 [tag](https://github.com/answufeng/aw-paddle-ocr/tags) 或 commit hash；构建结果以 [JitPack 构建页](https://jitpack.io/#answufeng/aw-paddle-ocr) 为准。
 
 ## 初始化
 
