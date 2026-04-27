@@ -14,4 +14,9 @@ target_compile_options(aw_ppocrv5 PRIVATE -fexceptions -frtti)
 
 target_link_libraries(aw_ppocrv5 ncnn ${OpenCV_LIBS} android jnigraphics log)
 
-target_link_options(aw_ppocrv5 PRIVATE -fopenmp -static-openmp -Wl,-z,max-page-size=16384)
+#
+# OpenCV 靜態庫（opencv-mobile）啟用了 OpenMP，需顯式連結 OpenMP runtime，
+# 否則在某些 CI（如 JitPack 的 NDK toolchain）會出現 __kmpc_* undefined symbol。
+#
+target_link_options(aw_ppocrv5 PRIVATE -fopenmp -Wl,-z,max-page-size=16384)
+target_link_libraries(aw_ppocrv5 omp)
