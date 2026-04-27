@@ -3,6 +3,9 @@ plugins {
     alias(libs.plugins.kotlin.android)
 }
 
+val enableX86ForEmulator =
+    (project.findProperty("aw.ocr.enableX86") as String?)?.toBooleanStrictOrNull() == true
+
 android {
     namespace = "com.answufeng.paddleocr.demo"
     compileSdk = 35
@@ -13,6 +16,16 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+
+        ndk {
+            // APK 最終打包哪些 ABI 由 app 模組決定；模擬器需要 x86_64 才能載入 JNI .so。
+            abiFilters +=
+                if (enableX86ForEmulator) {
+                    listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+                } else {
+                    listOf("armeabi-v7a", "arm64-v8a")
+                }
+        }
     }
 
     compileOptions {
