@@ -12,8 +12,6 @@ android {
         minSdk = 24
         consumerProguardFiles("consumer-rules.pro")
 
-        ndkVersion = "29.0.13113456"
-
         externalNativeBuild {
             cmake {
                 arguments += listOf(
@@ -41,6 +39,13 @@ android {
         cmake {
             version = "3.22.1"
             path = file("src/main/jni/CMakeLists.txt")
+        }
+    }
+
+    // 讓 AGP 產生可供 maven-publish 使用的 release SoftwareComponent
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
         }
     }
 
