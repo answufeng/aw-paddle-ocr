@@ -212,6 +212,16 @@ val r2 = AwPaddleOcr.detectFromAssets(context, "test.jpg")
 
 详见官方文档 [支持 16KB 页面](https://developer.android.com/guide/practices/page-sizes)。
 
+## 模拟器（x86_64）运行
+
+从 `1.0.7` 起，为了规避 `x86_64/libomp.so` 在部分环境的 **16KB 对齐**问题，库默认不打包 `x86/x86_64`，因此在 **x86_64 模拟器**上会出现找不到 `libaw_ppocrv5.so` 的错误。
+
+如需在模拟器上运行，请在构建时临时开启 x86：
+
+```bash
+./gradlew :demo:installDebug -Paw.ocr.enableX86=true
+```
+
 ## 混淆
 
 AAR 已带 `consumer-rules.pro`；若 JNI 仍被 R8 裁剪，可补充：
