@@ -10,6 +10,8 @@ val enableX86ForEmulator =
 android {
     namespace = "com.answufeng.paddleocr"
     compileSdk = 35
+    // NDK r28+ 預設產物為 16KB 對齊（含 libomp），避免 Play 16KB 掃描告警
+    ndkVersion = "28.2.13676358"
 
     defaultConfig {
         minSdk = 24
