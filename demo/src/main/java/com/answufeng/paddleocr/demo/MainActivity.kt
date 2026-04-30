@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
                     android.util.Log.i("AwPaddleOcr", "OCR result text: '${result.text}'")
                     android.util.Log.i("AwPaddleOcr", "OCR result textBlocks count: ${result.textBlocks.size}")
                     result.textBlocks.forEachIndexed { index, block ->
-                        android.util.Log.i("AwPaddleOcr", "Block[$index]: text='${block.text}', score=${block.boxScore}, crnnTime=${block.crnnTime}")
+                        android.util.Log.i("AwPaddleOcr", "Block[$index]: text='${block.text}', score=${block.boxScore}")
                     }
                     runOnUiThread {
                         val text = result.text.ifEmpty { "未识别到文字" }

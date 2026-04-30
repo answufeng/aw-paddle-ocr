@@ -188,6 +188,16 @@ val r2 = AwPaddleOcr.detectFromAssets(context, "test.jpg")
 
 `OcrResult.boxImg` 目前恒为 `null`；`saveBoxImageToFile` 已弃用，需自绘检测框后自行保存位图。
 
+`OcrResult.detectTimeMs` 为本次推理耗时（毫秒，`Long` 类型）。可通过 `AwPaddleOcr.setPerformanceListener` 注册性能回调：
+
+```kotlin
+AwPaddleOcr.setPerformanceListener(object : AwPaddleOcr.OcrPerformanceListener {
+    override fun onDetect(detectTimeMs: Long, textBlockCount: Int) {
+        Log.d("OCR", "推理 ${detectTimeMs}ms, ${textBlockCount} 块")
+    }
+})
+```
+
 ## API 速览
 
 | 入口 | 作用 |

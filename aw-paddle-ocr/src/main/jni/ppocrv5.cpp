@@ -146,8 +146,11 @@ int PPOCRv5::load(const char* det_parampath, const char* det_modelpath, const ch
     ppocrv5_det.opt.use_vulkan_compute = use_gpu;
 #endif
 
-    ppocrv5_det.load_param(det_parampath);
-    ppocrv5_det.load_model(det_modelpath);
+    {
+        int ret1 = ppocrv5_det.load_param(det_parampath);
+        int ret2 = ppocrv5_det.load_model(det_modelpath);
+        if (ret1 != 0 || ret2 != 0) return -1;
+    }
 
     // default to 1 thread, as we rec multiple lines in parallel
     ppocrv5_rec.opt.num_threads = 1;
@@ -160,8 +163,11 @@ int PPOCRv5::load(const char* det_parampath, const char* det_modelpath, const ch
     ppocrv5_rec.opt.use_vulkan_compute = use_gpu;
 #endif
 
-    ppocrv5_rec.load_param(rec_parampath);
-    ppocrv5_rec.load_model(rec_modelpath);
+    {
+        int ret1 = ppocrv5_rec.load_param(rec_parampath);
+        int ret2 = ppocrv5_rec.load_model(rec_modelpath);
+        if (ret1 != 0 || ret2 != 0) return -2;
+    }
 
     return 0;
 }
@@ -179,8 +185,11 @@ int PPOCRv5::load(AAssetManager* mgr, const char* det_parampath, const char* det
     ppocrv5_det.opt.use_vulkan_compute = use_gpu;
 #endif
 
-    ppocrv5_det.load_param(mgr, det_parampath);
-    ppocrv5_det.load_model(mgr, det_modelpath);
+    {
+        int ret1 = ppocrv5_det.load_param(mgr, det_parampath);
+        int ret2 = ppocrv5_det.load_model(mgr, det_modelpath);
+        if (ret1 != 0 || ret2 != 0) return -1;
+    }
 
     // default to 1 thread, as we rec multiple lines in parallel
     ppocrv5_rec.opt.num_threads = 1;
@@ -193,8 +202,11 @@ int PPOCRv5::load(AAssetManager* mgr, const char* det_parampath, const char* det
     ppocrv5_rec.opt.use_vulkan_compute = use_gpu;
 #endif
 
-    ppocrv5_rec.load_param(mgr, rec_parampath);
-    ppocrv5_rec.load_model(mgr, rec_modelpath);
+    {
+        int ret1 = ppocrv5_rec.load_param(mgr, rec_parampath);
+        int ret2 = ppocrv5_rec.load_model(mgr, rec_modelpath);
+        if (ret1 != 0 || ret2 != 0) return -2;
+    }
 
     return 0;
 }

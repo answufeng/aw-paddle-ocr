@@ -63,7 +63,7 @@ class GalleryOcrActivity : AppCompatActivity() {
             try {
                 val result = AwPaddleOcr.detectAsync(bitmap)
                 tvResult.text = result.mergedText
-                tvTime.text = "识别耗时: ${result.detectTime.toInt()} ms"
+                tvTime.text = "识别耗时: ${result.detectTimeMs} ms"
             } catch (e: Exception) {
                 tvResult.text = "识别失败: ${e.message}"
             } finally {

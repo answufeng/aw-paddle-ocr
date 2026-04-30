@@ -69,7 +69,7 @@ class AdvancedApiActivity : AppCompatActivity() {
                 val kvs = result.extractKeyValues()
                 val elapsed = System.currentTimeMillis() - t0
                 val sb = StringBuilder()
-                sb.appendLine("detect: ${result.detectTime.toInt()} ms (native) / 总 ${elapsed} ms")
+                sb.appendLine("detect: ${result.detectTimeMs} ms (native) / 总 ${elapsed} ms")
                 sb.appendLine("块数: ${result.textBlocks.size}")
                 sb.appendLine("findFirst(识别,方式): ${first.map { it?.text }}")
                 sb.appendLine(
@@ -138,7 +138,7 @@ class AdvancedApiActivity : AppCompatActivity() {
                     ignoreCase = true
                 )
                 tvLog.text = buildString {
-                    appendLine("detect: ${result.detectTime.toInt()} ms, findFuzzy")
+                    appendLine("detect: ${result.detectTimeMs} ms, findFuzzy")
                     fuzzy.forEach { (k, v) ->
                         appendLine("$k -> ${v.map { "${it.matched.text}(${it.similarity})" }}")
                     }
@@ -171,7 +171,7 @@ class AdvancedApiActivity : AppCompatActivity() {
                 val elapsed = System.currentTimeMillis() - t0
                 tvLog.text = buildString {
                     appendLine("ROI: $region")
-                    appendLine("耗时: ${result.detectTime.toInt()} ms (native) / 总 $elapsed ms")
+                    appendLine("耗时: ${result.detectTimeMs} ms (native) / 总 $elapsed ms")
                     appendLine("块数: ${result.textBlocks.size}")
                     appendLine(result.mergedText.take(300))
                 }
@@ -222,7 +222,7 @@ class AdvancedApiActivity : AppCompatActivity() {
                 val elapsed = System.currentTimeMillis() - t0
                 tvLog.text = buildString {
                     appendLine("detectFromFile: ${file.absolutePath}")
-                    appendLine("native ${result.detectTime.toInt()} ms / 总 $elapsed ms, 块 ${result.textBlocks.size}")
+                    appendLine("native ${result.detectTimeMs} ms / 总 $elapsed ms, 块 ${result.textBlocks.size}")
                     appendLine(result.mergedText.take(400))
                 }
             } catch (e: Exception) {

@@ -1,12 +1,12 @@
 package com.answufeng.paddleocr
 
 import android.graphics.Point
+import kotlin.math.abs
 
 /**
  * 针对**已得到的** [OcrResult] 的纯 JVM 后处理，不再次触发 native 推理。
  * 对同一张图应只调一次 [AwPaddleOcr.detect]，再链式使用本文件中的扩展，避免重复全图识别。
- */
-/**
+ *
  * 对每个待查串在 [textBlocks] 中找**第一块** [String.contains] 命中的文本，包装为 [TextMatch]；未找到为 `null`。
  *
  * @param texts 与返回列表**等长**的查询键，按顺序对应
@@ -66,7 +66,7 @@ fun OcrResult.findPaired(
         val s1Center = s1Block.centerPoint()
         for (s2Block in s2Blocks) {
             val s2Center = s2Block.centerPoint()
-            val heightDiff = kotlin.math.abs(s1Center.y - s2Center.y)
+            val heightDiff = abs(s1Center.y - s2Center.y)
             if (heightDiff <= maxHeightDiff) {
                 pairs.add(
                     TextPair(
