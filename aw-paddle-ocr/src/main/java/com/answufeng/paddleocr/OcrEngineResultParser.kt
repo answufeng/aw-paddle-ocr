@@ -4,7 +4,7 @@ import android.graphics.Point
 
 /**
  * 解析 JNI 层 [PPOCRv5Engine] 返回的字符串，格式为每行一块文字：
- * `x1,y1,...x4,y4|score|orientation|text`
+ * `x1,y1,...x4,y4|score|orientation|text`（[text] 中可含 `|`，故僅按前 3 個 `|` 分割）
  */
 internal object OcrEngineResultParser {
 
@@ -18,20 +18,12 @@ internal object OcrEngineResultParser {
     }
 
     private fun parseLine(line: String): OcrTextBlock? {
-        val firstPipe = line.indexOf('|')
-        if (firstPipe < 0) return null
-        val coordsStr = line.substring(0, firstPipe)
-        val rest = line.substring(firstPipe + 1)
-
-        val secondPipe = rest.indexOf('|')
-        if (secondPipe < 0) return null
-        val scoreStr = rest.substring(0, secondPipe)
-        val afterScore = rest.substring(secondPipe + 1)
-
-        val thirdPipe = afterScore.indexOf('|')
-        if (thirdPipe < 0) return null
-        val orientationStr = afterScore.substring(0, thirdPipe)
-        val text = afterScore.substring(thirdPipe + 1)
+        val parts = line.split('|', limit = 4)
+        if (parts.size < 4) return null
+        val coordsStr = parts[0]
+        val scoreStr = parts[1]
+        val orientationStr = parts[2]
+        val text = parts[3]
 
         val coords = coordsStr.split(",").mapNotNull { it.toFloatOrNull() }
         if (coords.size != 8) {

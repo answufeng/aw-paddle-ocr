@@ -4,6 +4,7 @@
 
 #include <jni.h>
 
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -19,12 +20,14 @@
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 static PPOCRv5* g_ppocrv5 = 0;
+static std::mutex g_ppocrv5_mutex;
 
 extern "C" {
 
 JNIEXPORT jboolean JNICALL
 Java_com_answufeng_paddleocr_PPOCRv5Engine_nativeLoadModel(JNIEnv* env, jobject thiz, jobject assetManager, jstring modelType, jint targetSize, jboolean useGpu)
 {
+    std::lock_guard<std::mutex> lock(g_ppocrv5_mutex);
     AAssetManager* mgr = AAssetManager_fromJava(env, assetManager);
     if (!mgr)
     {
@@ -68,6 +71,7 @@ Java_com_answufeng_paddleocr_PPOCRv5Engine_nativeLoadModel(JNIEnv* env, jobject 
 JNIEXPORT jstring JNICALL
 Java_com_answufeng_paddleocr_PPOCRv5Engine_nativeDetectAndRecognize(JNIEnv* env, jobject thiz, jobject bitmap)
 {
+    std::lock_guard<std::mutex> lock(g_ppocrv5_mutex);
     if (!g_ppocrv5)
     {
         LOGE("OCR engine not initialized");
@@ -150,6 +154,7 @@ Java_com_answufeng_paddleocr_PPOCRv5Engine_nativeDetectAndRecognize(JNIEnv* env,
 JNIEXPORT jstring JNICALL
 Java_com_answufeng_paddleocr_PPOCRv5Engine_nativeDetectTextBlocksOnly(JNIEnv* env, jobject thiz, jobject bitmap)
 {
+    std::lock_guard<std::mutex> lock(g_ppocrv5_mutex);
     if (!g_ppocrv5)
     {
         LOGE("OCR engine not initialized");
@@ -223,6 +228,7 @@ Java_com_answufeng_paddleocr_PPOCRv5Engine_nativeDetectTextBlocksOnly(JNIEnv* en
 JNIEXPORT void JNICALL
 Java_com_answufeng_paddleocr_PPOCRv5Engine_nativeRelease(JNIEnv* env, jobject thiz)
 {
+    std::lock_guard<std::mutex> lock(g_ppocrv5_mutex);
     if (g_ppocrv5)
     {
         delete g_ppocrv5;

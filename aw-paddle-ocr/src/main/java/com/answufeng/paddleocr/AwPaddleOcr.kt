@@ -370,7 +370,8 @@ object AwPaddleOcr {
             private set
 
         fun targetSize(value: Int) {
-            targetSize = value.coerceIn(320, 1280)
+            val v = if (value <= 0) 640 else value
+            targetSize = v.coerceIn(320, 1280)
         }
     }
 }

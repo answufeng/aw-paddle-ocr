@@ -22,7 +22,8 @@
 
 #include "ppocrv5_dict.h"
 
-
+#include <algorithm>
+#include <cmath>
 
 static double contour_score(const cv::Mat& binary, const std::vector<cv::Point>& contour)
 {
@@ -60,7 +61,8 @@ static cv::Mat get_rotate_crop_image(const cv::Mat& rgb, const Object& object)
     const float rh = object.rrect.size.height;
 
     const int target_height = 48;
-    const float target_width = rh * target_height / rw;
+    const float rwSafe = std::max(rw, 1e-5f);
+    const int target_width = std::max(1, (int)std::lroundf(rh * target_height / rwSafe));
 
     // warpperspective shall be used to rotate the image
     // but actually they are all rectangles, so warpaffine is almost enough  :P
@@ -340,8 +342,8 @@ int PPOCRv5::detect(const cv::Mat& rgb, std::vector<Object>& objects)
                 std::swap(rrect.size.width, rrect.size.height);
             }
 
-            // enlarge
-            rrect.size.height += rrect.size.width * (enlarge_ratio - 1);
+            // enlarge（寬高均按相同比例放大，避免高度增量錯誤地與寬度掛鉤）
+            rrect.size.height *= enlarge_ratio;
             rrect.size.width *= enlarge_ratio;
 
             // adjust offset to original unpadded

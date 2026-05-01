@@ -12,6 +12,7 @@ import android.util.Log
  */
 class PPOCRv5Engine internal constructor() {
 
+    @Volatile
     private var loaded = false
 
     /**
